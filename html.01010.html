@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"> 
+
+    <head>  <title>☹️Dynamic website</title>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" 
+              content="IE=edge">
+        <meta name="viewport" 
+              content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="./style.css">
+    </head>
+    <body>
+    <div class="container">
+        <button onclick="demo()">Do not click here</button> 
+        <p id="firsttext">This is the first version of the text</p>
+        <button onclick="demo2()">Do not click here</button> 
+    </div>
+</body>
+    <script>
+        function demo() {
+            var emm= document.getElementById("firsttext");
+            emm.innerHTML = "This is new text";
+        }
+
+        function demo2() {
+            var emm= document.getElementById("firsttext");
+            emm.innerHTML = "This is the first version of the text";
+        }
+    </script>
+   
+</html>
