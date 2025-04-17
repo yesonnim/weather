@@ -166,3 +166,13 @@ html {
     height: auto;
     transition: transform 0.3s ease-in-out;
 }
+button{
+    background-color: #fdf7f7;
+    color: rgb(227, 13, 167);
+    font-weight: 900;
+    padding: 10px;
+    border: 1;
+    border-color: #f4b1cd;
+    border-radius: 15px;
+    cursor: pointer;
+}
