@@ -1,64 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Dynamic Website</title>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="./style.css">
+  <title>Weather in Korea 🌏</title>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="./style01.css" />
+  <!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 </head>
+
 <body>
-    <div class="container" style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
-        <h1 style="background-color: rgb(243, 247, 252,50%); border-radius: 20px; text-align: center;">Enter a number (1-7) to find the day of the week</h1>
-        <input  style="background-color: rgb(255, 240, 254); border-radius: 20px; border-color: aliceblue;" type="number" id="dayInput" placeholder="Enter a number " >
-        <button onclick="getDay()">Get Day</button>
-        <p id="dayOutput" style="text-align: center; color:rgb(252, 249, 250); background-color: rgb(236, 57, 164, 0.4); border-radius: 20px; border-color:white; ;"></p>
-        <img src="" id="dayImage" width="500px" style="border-radius:70px" ; >
-    <script>
-        function getDay() {
-            const day = parseInt(document.getElementById("dayInput").value);
-            const dayImage = document.getElementById("dayImage");
-            let dayName;
-            let imagePath;
+  <div class="container">
+    <h1>Weather in Korea 🌏</h1>
+    <p>Check the latest weather in major Korean cities 🌤️</p>
+  </div>
 
-            switch (day) {
-                case 1:
-                    dayName = "Monday";
-                    imagePath = "https://i.pinimg.com/736x/e9/ff/73/e9ff7301d3409a0cac7952b159e4f08f.jpg"; // Example image path
-                    break;
-                case 2:
-                    dayName = "Tuesday";
-                    imagePath = "https://i.pinimg.com/736x/cb/3e/40/cb3e40ccc1d6185bc52859d1395ab574.jpg";
-                    break;
-                case 3:
-                    dayName = "Wednesday";
-                    imagePath = "https://i.pinimg.com/736x/7b/37/67/7b3767ad8d0688fd6ae96761513a7e6f.jpg";
-                    break;
-                case 4:
-                    dayName = "Thursday";
-                    imagePath = "https://i.pinimg.com/736x/7c/5d/d4/7c5dd4356984cc348604ab1bcc1d4e91.jpg";
-                    break;
-                case 5:
-                    dayName = "Friday";
-                    imagePath = "https://i.pinimg.com/736x/6a/06/1e/6a061e2574932055d06b2a29f069c683.jpg";
-                    break;
-                case 6:
-                    dayName = "Saturday";
-                    imagePath = "https://i.pinimg.com/736x/8a/d4/52/8ad4527753265466df5e9f6e3aeee60f.jpg";
-                    break;
-                case 7:
-                    dayName = "Sunday";
-                    imagePath = "https://i.pinimg.com/736x/26/bd/8d/26bd8de14bee6f1ea49f14bcfc0c1dba.jpg";
-                    break;
-                default:
-                    dayName = "Invalid day. Please enter a number between 1 and 7.";
-                    imagePath = "https://i.pinimg.com/736x/4a/77/fb/4a77fb7852b45646853286ad3bf0c4a2.jpg"; 
-            }
+  <nav class="nav">
+    <ul class="city-buttons">
+      <li><button data-city="Seoul" data-lat="37.5665" data-lon="126.9780">Seoul</button></li>
+      <li><button data-city="Busan" data-lat="35.1796" data-lon="129.0756">Busan</button></li>
+      <li><button data-city="Incheon" data-lat="37.4563" data-lon="126.7052">Incheon</button></li>
+      <li><button data-city="Daejeon" data-lat="36.3504" data-lon="127.3845">Daejeon</button></li>
+      <li><button data-city="Daegu" data-lat="35.8714" data-lon="128.6014">Daegu</button></li>
+      <li><button data-city="Gwangju" data-lat="35.1595" data-lon="126.8526">Gwangju</button></li>
+      <li><button data-city="Other" data-lat="0" data-lon="0">Other</button></li>
+    </ul>
+  </nav>
+<br>
+<div class="top-row" style="display: flex; align-items: normal; gap: 1rem; text-align: center; height: max-content;">
+  
+    <div><h3 style="flex: 0 0 15%; background-color: #ccc; border-radius: 15px; padding: 1rem;">Today</h3>
+    <div id="today"></div></div>
+    
+    <div><h3 style="flex: 0 0 15%; background-color: #ccc; border-radius: 15px; padding: 1rem;">Tomorrow</h3>
+    <div id="tomorrow" ></div></div>
+    
+    <div id="map" style="flex: 1; background-color: lightblue; border-radius: 20px; height: 580px;"></div>
 
-            document.getElementById("dayOutput").innerText = dayName;
-            dayImage.src = imagePath;
+    </div>
+</div>
+  
+<div id="forecast" class="forecast-container"></div>
 
-        }
-    </script> 
+  <footer class="site-footer">
+    <p>&copy; 2025 Weather in Korea. All rights reserved.</p>
+    <p>Weather data from <a href="https://openweathermap.org/api" target="_blank">OpenWeatherMap</a></p>
+    <p>
+      <a href="/about">About</a> |
+      <a href="/contact">Contact</a> |
+      <a href="/terms">Terms of Service</a> |
+      <a href="/privacy">Privacy Policy</a>
+    </p>
+    <p>
+      <a href="https://github.com" target="_blank">GitHub</a>
+    </p>
+  </footer>
+
+  <script src="./weather12.js"></script>
 </body>
-</html>
