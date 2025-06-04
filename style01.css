@@ -97,7 +97,6 @@
   
   .forecast-container.fade-out {
     opacity: 0;
-    height: 580px;
   }
   
   .forecast-card {
@@ -106,14 +105,15 @@
     padding: 10px;
     text-align: center;
     width: 220px;
-    height: 580px;
     box-shadow: 10px 20px 50px rgba(196, 54, 54, 0.1);
   }
   
   #today .forecast-card {
     height: 510px;
   }
-  
+   #tomorrow .forecast-card {
+    height: 510px;
+  }
   #parameters {
     text-align-last: left;
   }
