@@ -1,9 +1,14 @@
-const apiKey = '8c2e569999a6352538da620e31f8890b';
-
-function loadWeather(city, lat, lon, button) {
+const apiKey = '8c2e569999a6352538da620e31f8890b'; 
+function loadWeather(city, lat, lon, button) { 
   const forecastContainer = document.getElementById('forecast');
   const todayContainer = document.getElementById('today');
   const tomorrowContainer = document.getElementById('tomorrow');
+
+  // Only do this if a button is provided
+  if (button) {
+    document.querySelectorAll('.city-buttons button').forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+  }
 
   // Clear previous content
   forecastContainer.innerHTML = '';
@@ -16,7 +21,7 @@ function loadWeather(city, lat, lon, button) {
       return response.json();
     })
     .then(data => {
-      const daily = data.daily.slice(0, 16); // up to 16 days
+      const daily = data.daily.slice(0, 7); // Use 7 for a week forecast, or keep 16 for all available days
       const hourly = data.hourly ?? [];
 
       const cardElements = []; // for AQI updating later
@@ -28,10 +33,9 @@ function loadWeather(city, lat, lon, button) {
         const sunset = new Date(day.sunset * 1000).toLocaleTimeString();
         const uvIndex = day.uvi ?? 'N/A';
       
-        // Only generate hourly list for first two days
         let hourlyList = '';
         if (index === 0 || index === 1) {
-          hourlyList = (data.hourly ?? [])
+          hourlyList = hourly
             .filter(h => new Date(h.dt * 1000).getDate() === date.getDate())
             .slice(0, 6)
             .map(hour => {
@@ -58,7 +62,6 @@ function loadWeather(city, lat, lon, button) {
           </div>
         `;
    
-
         // Append appropriately
         if (index === 0) {
           todayContainer.appendChild(card);
@@ -78,10 +81,7 @@ function loadWeather(city, lat, lon, button) {
 
       // Fetch AQI once and update all cards
       fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`)
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-          return res.json();
-        })
+        .then(res => res.ok ? res.json() : Promise.reject('Air quality error'))
         .then(airData => {
           const aqi = airData.list[0].main.aqi;
           const quality = ["Good", "Fair", "Moderate", "Poor", "Very Poor"];
@@ -96,7 +96,7 @@ function loadWeather(city, lat, lon, button) {
           cardElements.forEach(card => {
             const airQualityEl = card.querySelector('.air-quality');
             if (airQualityEl) {
-              airQualityEl.textContent = `Error loading air quality: ${err.message}`;
+              airQualityEl.textContent = `Error loading air quality: ${err}`;
             }
           });
         });
@@ -107,114 +107,186 @@ function loadWeather(city, lat, lon, button) {
     });
 }
 
-
 let map;
 let baseLayer;
-let overlayLayers = {};
 let layerControl;
-let activeOverlays = {}; // Track which overlays are active
+let activeLayers = {}; // Tracks which overlays are currently ON
+// Define overlays ONCE outside initMap
+
+const today = new Date().toISOString().split('T')[0];
+const lastday = new Date(Date.now() - 1 * 86400000).toISOString().split('T')[0];
+const date_for_precipitation = new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0];
+
+const overlayLayers = {
+  "VIIRS True Color (SNPP)": L.tileLayer(
+    `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${lastday}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
+    { attribution: 'NASA GIBS / VIIRS SNPP', tileSize: 256, minZoom: 1, maxZoom: 9 }
+  ),
+  "Temperature Overlay": L.tileLayer(
+    `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
+    { attribution: 'Map data © OpenWeatherMap', opacity: 0.8, tileSize: 256 }
+  ),
+  "Precipitation (IMERG, NASA)": L.tileLayer(
+    `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/IMERG_Precipitation_Rate/default/${date_for_precipitation}/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png`,
+    { attribution: 'NASA GIBS / IMERG', tileSize: 256, opacity: 0.8 }
+  )
+};
+
+const blackMarbleDate = "2024-05-14" //only for night view
 function initMap(lat, lon) {
-  const today = new Date().toISOString().split('T')[0];
-
-  // Define base layer (Blue Marble)
-  if (!baseLayer) {
-    baseLayer = L.tileLayer(
-      'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg',
-      {
-        attribution: 'NASA GIBS / Blue Marble',
-        tileSize: 256,
-        minZoom: 1,
-        maxZoom: 8
-      }
-    );
-  }
-
-  // Define overlay layers
-  overlayLayers["True Color (Today)"] = L.tileLayer(
-    `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${today}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
-    {
-      attribution: 'NASA GIBS / MODIS Terra',
-      tileSize: 256,
-      minZoom: 1,
-      maxZoom: 9
-    }
-  );
-
-  // Initialize map if not exists
   if (!map) {
-    map = L.map('map').setView([lat, lon], 7);
-    baseLayer.addTo(map);
 
-    // Initialize all overlays on map if active
-    for (const name in overlayLayers) {
-      if (activeOverlays[name] === undefined) {
-        // Default: true for True Color overlay on first load
-        activeOverlays[name] = (name === "True Color (Today)");
+    const baseLayers = {
+      "OpenStreetMap": L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', 
+        { attribution: '© OpenStreetMap contributors' }
+      ),
+      "Blue Marble": L.tileLayer(
+        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg',
+        { attribution: 'NASA GIBS / Blue Marble', tileSize: 256, minZoom: 1, maxZoom: 8 }
+      ),
+      
+      "Night": L.tileLayer(
+        `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_DayNightBand_AtSensor_M15/default/${blackMarbleDate}/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg`,
+        { attribution: 'VIIRS_SNPP_DayNightBand_AtSensor_M15', tileSize: 256, minZoom: 1, maxZoom: 9, opacity: 1}
+      )
+    };
+
+    //ONE base layer to show first
+    map = L.map('map', { layers: [baseLayers["OpenStreetMap"]] }).setView([lat, lon], 7);
+
+    // 3. Add overlays that are active by default
+    Object.entries(overlayLayers).forEach(([name, layer]) => {
+      if (activeLayers[name]) {
+        layer.addTo(map);
       }
-      if (activeOverlays[name]) {
-        overlayLayers[name].addTo(map);
-      }
-    }
+    });
 
-    // Create layer control with base and overlays
-    layerControl = L.control.layers(
-      { "Default": baseLayer },
-      overlayLayers
-    ).addTo(map);
+    // control with base layers and overlays
+    layerControl = L.control.layers(baseLayers, overlayLayers).addTo(map);
 
-    // Listen to overlayadd and overlayremove events to update activeOverlays state
+    // Listen for overlay add/remove to keep track of activeLayers
     map.on('overlayadd', function(e) {
-      activeOverlays[e.name] = true;
+      for (const [name, layer] of Object.entries(overlayLayers)) {
+        if (layer === e.layer) {
+          activeLayers[name] = true;
+        }
+      }
     });
     map.on('overlayremove', function(e) {
-      activeOverlays[e.name] = false;
+      for (const [name, layer] of Object.entries(overlayLayers)) {
+        if (layer === e.layer) {
+          activeLayers[name] = false;
+        }
+      }
     });
-
   } else {
-    // Map exists: just update view
     map.setView([lat, lon], 7);
-
-    // Remove all overlays from map first
-    for (const name in overlayLayers) {
-      if (map.hasLayer(overlayLayers[name])) {
-        map.removeLayer(overlayLayers[name]);
-      }
-    }
-
-    // Add overlays that are active
-    for (const name in overlayLayers) {
-      if (activeOverlays[name]) {
-        overlayLayers[name].addTo(map);
-      }
-    }
   }
 }
 
+
+function searchCity(cityName) {
+  const dropdown = document.getElementById('city-dropdown');
+  dropdown.style.display = 'block'; // Show dropdown
+  dropdown.innerHTML = '<li style="padding: 10px; text-align: center;">Loading...</li>'; // Show loading state
+
+  fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${cityName}&limit=5&appid=${apiKey}`)
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return response.json();
+    })
+    .then(data => {
+      if (data.length === 0) {
+        dropdown.innerHTML = '<li style="padding: 10px; text-align: center;">No cities found</li>';
+        return;
+      }
+
+      // Populate dropdown with cities
+      dropdown.innerHTML = '';
+      data.forEach(city => {
+        const listItem = document.createElement('li');
+        listItem.style.padding = '10px';
+        listItem.style.cursor = 'pointer';
+        listItem.textContent = `${city.name}, ${city.country}`;
+        listItem.dataset.lat = city.lat;
+        listItem.dataset.lon = city.lon;
+
+        listItem.addEventListener('click', () => {
+          const lat = parseFloat(listItem.dataset.lat);
+          const lon = parseFloat(listItem.dataset.lon);
+          const cityName = city.name;
+
+          dropdown.style.display = 'none'; // Hide dropdown
+          document.getElementById('search-input').value = cityName; // Update input field
+          initMap(lat, lon); // Update map view
+          loadWeather(cityName, lat, lon, null); // Load weather data for the selected city
+        });
+
+        dropdown.appendChild(listItem);
+      });
+    })
+    .catch(error => {
+      console.error('Error searching for city:', error);
+      dropdown.innerHTML = '<li style="padding: 10px; text-align: center;">Error loading cities</li>';
+    });
+}
+
 window.onload = () => {
-  const buttons = document.querySelectorAll('.city-buttons button');
+  const buttons = document.querySelectorAll('.city-buttons button'); // Declare buttons at the beginning
+
+  if (buttons.length > 0) {
+    const lat = parseFloat(buttons[0].dataset.lat);
+    const lon = parseFloat(buttons[0].dataset.lon);
+    const city = buttons[0].dataset.city;
+
+    if (!isNaN(lat) && !isNaN(lon)) {
+      initMap(lat, lon); // Initialize map with default city coordinates
+      loadWeather(city, lat, lon, buttons[0]); // Load weather data for default city
+      buttons[0].classList.add('active'); // Highlight the default city button
+    } else {
+      console.error('Invalid default city coordinates.');
+    }
+  } else {
+    console.error('No city buttons found.');
+  }
+
+  // Add event listeners to city buttons
   buttons.forEach(button => {
     button.addEventListener('click', () => {
       const lat = parseFloat(button.dataset.lat);
       const lon = parseFloat(button.dataset.lon);
       const city = button.dataset.city;
 
-      if (isNaN(lat) || isNaN(lon)) {
+      if (!isNaN(lat) && !isNaN(lon)) {
+        initMap(lat, lon); // Update map view
+        loadWeather(city, lat, lon, button); // Load weather data
+        buttons.forEach(btn => btn.classList.remove('active')); // Remove active class from all buttons
+        button.classList.add('active'); // Highlight the clicked button
+      } else {
         console.error(`Invalid coordinates for city: ${city}`);
-        alert(`Invalid coordinates for city: ${city}`);
-        return;
       }
-
-      initMap(lat, lon); // re-inits map view and overlays without full reset
-      loadWeather(city, lat, lon, button);
     });
   });
 
-  // Load first city on startup
-  if (buttons[0]) {
-    const lat = parseFloat(buttons[0].dataset.lat);
-    const lon = parseFloat(buttons[0].dataset.lon);
-    const city = buttons[0].dataset.city;
-    initMap(lat, lon);
-    loadWeather(city, lat, lon, buttons[0]);
-  }
+  // Add search functionality
+  const searchInput = document.getElementById('search-input');
+  const searchButton = document.getElementById('search-button');
+  searchInput.addEventListener('input', () => {
+    const cityName = searchInput.value.trim();
+    if (cityName) {
+      searchCity(cityName);
+    } else {
+      document.getElementById('city-dropdown').style.display = 'none'; // Hide dropdown if input is empty
+    }
+  });
+
+  searchButton.addEventListener('click', () => {
+    const cityName = searchInput.value.trim();
+    if (cityName) {
+      searchCity(cityName);
+    } else {
+      alert('Please enter a city name.');
+    }
+  });
 };
