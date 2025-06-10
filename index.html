@@ -25,8 +25,18 @@
       <li><button data-city="Daejeon" data-lat="36.3504" data-lon="127.3845">Daejeon</button></li>
       <li><button data-city="Daegu" data-lat="35.8714" data-lon="128.6014">Daegu</button></li>
       <li><button data-city="Gwangju" data-lat="35.1595" data-lon="126.8526">Gwangju</button></li>
-      <li><button data-city="Other" data-lat="0" data-lon="0">Other</button></li>
-    </ul>
+          <div class="search-container" style="position: relative; display: inline-block;">
+      <input
+        style="border-radius: 20px; padding: 3px; width: 100%;"
+        type="text"
+        id="search-input"
+        placeholder="Enter city name"
+      />
+      <ul
+        id="city-dropdown"
+        style="position: absolute; top: 100%; left: 0; width: 100%; background-color: white; border: 1px solid #ccc; border-radius: 5px; list-style: none; padding: 0; margin: 0; display: none; z-index: 1000;"
+      ></ul>
+    </div>
   </nav>
 <br>
 <div class="top-row" style="display: flex; align-items: normal; gap: 1rem; text-align: center; height: max-content;">
@@ -54,7 +64,7 @@
       <a href="/privacy">Privacy Policy</a>
     </p>
     <p>
-      <a href="https://github.com/yesonnim/weather">GitHub</a>
+      <a href="https://github.com" target="_blank">GitHub</a>
     </p>
   </footer>
 
