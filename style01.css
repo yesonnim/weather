@@ -1,20 +1,17 @@
-* {
-    box-sizing: border-box;
-    font-family: monospace;
-  }
-  
-  html {
+html {
     scroll-behavior: smooth;
   }
   
   body {
+    box-sizing: border-box;
+    font-family: monospace;
     margin: 0;
-    background-color: rgb(243, 243, 243);
+    background-color: #000; /* Set background to black */
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-position: center center;
     background-size: cover;
-    color: #000000;
+    color: #ffffff; /* Adjust text color for readability */
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -97,6 +94,7 @@
   
   .forecast-container.fade-out {
     opacity: 0;
+
   }
   
   .forecast-card {
@@ -105,15 +103,10 @@
     padding: 10px;
     text-align: center;
     width: 220px;
+
     box-shadow: 10px 20px 50px rgba(196, 54, 54, 0.1);
   }
   
-  #today .forecast-card {
-    height: 510px;
-  }
-   #tomorrow .forecast-card {
-    height: 510px;
-  }
   #parameters {
     text-align-last: left;
   }
@@ -205,8 +198,10 @@
     background-color: lightblue;
     border-radius: 20px;
   }
-  
+
   #today, #tomorrow {
-    height: 580px;
+    background-color: rgb(219, 234, 239);
+    height: 530px; /* Set consistent height */
+    border-radius: 10px;
+    overflow-y: auto; /* Add scroll if content exceeds height */
   }
-  
