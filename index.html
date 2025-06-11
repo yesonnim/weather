@@ -30,7 +30,7 @@
         style="border-radius: 20px; padding: 3px; width: 100%;"
         type="text"
         id="search-input"
-        placeholder="Enter city name"
+        placeholder="Enter city name 🔎"
       />
       <ul
         id="city-dropdown"
@@ -39,34 +39,50 @@
     </div>
   </nav>
 <br>
-<div class="top-row" style="display: flex; align-items: normal; gap: 1rem; text-align: center; height: max-content;">
-  
-    <div><h3 style="flex: 0 0 15%; background-color: #ccc; border-radius: 15px; padding: 1rem;">Today</h3>
-    <div id="today"></div></div>
-    
-    <div><h3 style="flex: 0 0 15%; background-color: #ccc; border-radius: 15px; padding: 1rem;">Tomorrow</h3>
-    <div id="tomorrow" ></div></div>
-    
-    <div id="map" style="flex: 1; background-color: lightblue; border-radius: 20px; height: 580px;"></div>
-
+<div class="top-row" style="display: flex; align-items: flex-start; gap: 1rem; text-align: center;">
+  <div>
+    <div style="background-color: #ccc; border-radius: 15px; padding: 0.5em;">
+      <h3>Today</h3>
     </div>
+    <br>
+    <div id="today" style="background-color: rgb(219, 234, 239); height: 530px; border-radius: 10px;"></div> 
+  </div>
+
+  <div>
+    <div style="background-color: #ccc; border-radius: 15px; padding: 0.5em;">
+      <h3>Tomorrow</h3>
+    </div>
+    <br>
+    <div id="tomorrow" style="background-color: rgb(219, 234, 239); height: 530px; border-radius: 10px;"></div> 
+  </div>
+
+  <div id="map" style="flex: 1; background-color: lightblue; border-radius: 20px; height: 600px;"></div>
+</div>
+<br> 
+<div id="slider-container" style="overflow-x: auto; white-space: nowrap; display: flex; gap: 0.5em; padding: 1rem; background-color: #ffffff; border-radius: 15px;">
 </div>
   
 <div id="forecast" class="forecast-container"></div>
+
+<div class="container" style="display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center; padding: 1rem; background-color: #000000; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+  <canvas id="climateChart" width="800" height="400" style="max-width: 100%; border: 1px solid #ccc; border-radius: 10px;"></canvas>
+  <div id="info" style="font-size: 1rem; color: #333; text-align: center; padding: 0.5rem; background-color: #fff; border-radius: 5px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+  </div>
+</div>
+     
+      
+</div>
 
   <footer class="site-footer">
     <p>&copy; 2025 Weather in Korea. All rights reserved.</p>
     <p>Weather data from <a href="https://openweathermap.org/api" target="_blank">OpenWeatherMap</a></p>
     <p>
-      <a href="/about">About</a> |
-      <a href="/contact">Contact</a> |
-      <a href="/terms">Terms of Service</a> |
-      <a href="/privacy">Privacy Policy</a>
-    </p>
-    <p>
+      <a href="https://github.com/yesonnim/weather" target="_blank">GitHub</a>
       <a href="https://www.canva.com/design/DAGpQE_iZh8/YxDNq7pbduOC9TVK0lj3pA/edit?utm_content=DAGpQE_iZh8&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank">Presentation</a>
     </p>
   </footer>
 
   <script src="./weather12.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
+</html>
