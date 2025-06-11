@@ -3,6 +3,7 @@ function loadWeather(city, lat, lon, button) {
   const forecastContainer = document.getElementById('forecast');
   const todayContainer = document.getElementById('today');
   const tomorrowContainer = document.getElementById('tomorrow');
+  const sliderContainer = document.getElementById('slider-container'); // Add slider container
 
   // Only do this if a button is provided
   if (button) {
@@ -14,6 +15,7 @@ function loadWeather(city, lat, lon, button) {
   forecastContainer.innerHTML = '';
   todayContainer.innerHTML = '';
   tomorrowContainer.innerHTML = '';
+  sliderContainer.innerHTML = ''; // Clear slider content
 
   fetch(`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,alerts&appid=${apiKey}&units=metric`)
     .then(response => {
@@ -21,7 +23,7 @@ function loadWeather(city, lat, lon, button) {
       return response.json();
     })
     .then(data => {
-      const daily = data.daily.slice(0, 7); // Use 7 for a week forecast, or keep 16 for all available days
+      const daily = data.daily.slice(0, 16); 
       const hourly = data.hourly ?? [];
 
       const cardElements = []; // for AQI updating later
@@ -32,6 +34,7 @@ function loadWeather(city, lat, lon, button) {
         const sunrise = new Date(day.sunrise * 1000).toLocaleTimeString();
         const sunset = new Date(day.sunset * 1000).toLocaleTimeString();
         const uvIndex = day.uvi ?? 'N/A';
+        const precipitation = day.pop ? `${Math.round(day.pop * 100)}%` : 'N/A'; // Add precipitation data
       
         let hourlyList = '';
         if (index === 0 || index === 1) {
@@ -53,6 +56,7 @@ function loadWeather(city, lat, lon, button) {
           <h2>${Math.round(day.temp.day)}°C</h2>
           <p>💧 ${day.humidity}%</p>
           <p>💨 ${day.wind_speed} km/h</p>
+          <p>🌧️ Precipitation: ${precipitation}</p> 
           <div class="details">
             <p>☀️ Sunrise: ${sunrise}</p>
             <p>🌙 Sunset: ${sunset}</p>
@@ -68,12 +72,7 @@ function loadWeather(city, lat, lon, button) {
         } else if (index === 1) {
           tomorrowContainer.appendChild(card);
         } else {
-          const detailSection = card.querySelector('.details');
-          detailSection.style.display = 'none';
-          card.addEventListener('click', () => {
-            detailSection.style.display = detailSection.style.display === 'none' ? 'block' : 'none';
-          });
-          forecastContainer.appendChild(card);
+          sliderContainer.appendChild(card); // Add to slider container
         }
 
         cardElements.push(card); // collect for AQI insertion
@@ -122,9 +121,15 @@ const overlayLayers = {
     `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${lastday}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
     { attribution: 'NASA GIBS / VIIRS SNPP', tileSize: 256, minZoom: 1, maxZoom: 9 }
   ),
-  "Temperature Overlay": L.tileLayer(
-    `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-    { attribution: 'Map data © OpenWeatherMap', opacity: 0.8, tileSize: 256 }
+  "Air Temp 2m (custom)": L.tileLayer(
+    `https://maps.openweathermap.org/maps/2.0/weather/TA2/{z}/{x}/{y}?appid=${apiKey}&fill_bound=true&opacity=0.6&palette=-65:821692;-55:821692;-45:821692;-40:821692;-30:8257db;-20:208cec;-10:20c4e8;0:23dddd;10:c2ff28;20:fff028;25:ffc228;30:fc8014`,
+    {
+      attribution: "OpenWeatherMap TA2",
+      tileSize: 256,
+      opacity: 0.6,
+      minZoom: 1,
+      maxZoom: 10
+    }
   ),
   "Precipitation (IMERG, NASA)": L.tileLayer(
     `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/IMERG_Precipitation_Rate/default/${date_for_precipitation}/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png`,
@@ -152,10 +157,10 @@ function initMap(lat, lon) {
       )
     };
 
-    //ONE base layer to show first
-    map = L.map('map', { layers: [baseLayers["OpenStreetMap"]] }).setView([lat, lon], 7);
+    // base layer to show first
+    map = L.map('map', { layers: [baseLayers["Blue Marble"]] }).setView([lat, lon], 7);
 
-    // 3. Add overlays that are active by default
+    // overlays that are active by default
     Object.entries(overlayLayers).forEach(([name, layer]) => {
       if (activeLayers[name]) {
         layer.addTo(map);
@@ -185,6 +190,83 @@ function initMap(lat, lon) {
   }
 }
 
+async function loadHistory(city, lat, lon) {
+  //  today's MM-DD (e.g., "06-12")
+  const today = new Date();
+  const mmdd = String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+
+  // up to last full year (e.g., 2024 if now 2025)
+  const endYear = new Date().getFullYear() - 1;
+  const startDate = "1940-01-01";
+  const endDate = `${endYear}-12-31`;
+
+  document.getElementById('info').innerHTML = `Loading data for ${city}... (can take a while)`;
+
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_mean&timezone=Asia/Seoul`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Error fetching data");
+    const data = await res.json();
+    if (!data.daily || !data.daily.time || !data.daily.temperature_2m_mean) {
+      document.getElementById('info').innerHTML = 'No data available for this city!';
+      return;
+    }
+
+    // Filter for today's MM-DD across all years
+    const filtered = [];
+    for (let i = 0; i < data.daily.time.length; ++i) {
+      if (data.daily.time[i].slice(5) === mmdd) {
+        filtered.push({ year: data.daily.time[i].slice(0, 4), temp: data.daily.temperature_2m_mean[i] });
+      }
+    }
+
+    if (filtered.length === 0) {
+      document.getElementById('info').innerHTML = 'No data for this date!';
+      return;
+    }
+
+    // Prepare arrays for plotting
+    const years = filtered.map(item => item.year);
+    const temps = filtered.map(item => item.temp);
+
+    drawChart(years, temps, `${city} on ${mmdd}`);
+    document.getElementById('info').innerHTML =
+      `<b>Temperature on ${mmdd} in ${city} from ${years[0]} to ${years[years.length - 1]}</b>`;
+  } catch (err) {
+    document.getElementById('info').innerHTML = `<b>Error: ${err.message}</b>`;
+  }
+}
+
+let climateChart;
+function drawChart(years, temps, city) {
+  if (climateChart) climateChart.destroy(); // Destroy existing chart if any
+  const ctx = document.getElementById('climateChart').getContext('2d');
+  climateChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: [{
+        label: `How Temperature Changed Over the Last 80 Years`,
+        data: temps,
+        borderColor: 'rgb(3, 127, 59)',
+        backgroundColor: 'rgba(3, 127, 59, 0.2)',
+        pointRadius: 2,
+        tension: 0.12,
+        fill: true
+      }]
+    },
+    options: {
+      plugins: {
+        title: { display: true, text: ` ${city}` }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Year' } },
+        y: { title: { display: true, text: '°C' } }
+      }
+    }
+  });
+}
 
 function searchCity(cityName) {
   const dropdown = document.getElementById('city-dropdown');
@@ -233,8 +315,11 @@ function searchCity(cityName) {
 }
 
 window.onload = () => {
-  const buttons = document.querySelectorAll('.city-buttons button'); // Declare buttons at the beginning
+  const buttons = document.querySelectorAll('.city-buttons button'); // Declare city buttons
+  const searchInput = document.getElementById('search-input');
+  const searchButton = document.getElementById('search-button');
 
+  // Initialize default city
   if (buttons.length > 0) {
     const lat = parseFloat(buttons[0].dataset.lat);
     const lon = parseFloat(buttons[0].dataset.lon);
@@ -243,6 +328,7 @@ window.onload = () => {
     if (!isNaN(lat) && !isNaN(lon)) {
       initMap(lat, lon); // Initialize map with default city coordinates
       loadWeather(city, lat, lon, buttons[0]); // Load weather data for default city
+      loadHistory(city, lat, lon); // Load historical climate data for default city
       buttons[0].classList.add('active'); // Highlight the default city button
     } else {
       console.error('Invalid default city coordinates.');
@@ -261,6 +347,7 @@ window.onload = () => {
       if (!isNaN(lat) && !isNaN(lon)) {
         initMap(lat, lon); // Update map view
         loadWeather(city, lat, lon, button); // Load weather data
+        loadHistory(city, lat, lon); // Load historical climate data
         buttons.forEach(btn => btn.classList.remove('active')); // Remove active class from all buttons
         button.classList.add('active'); // Highlight the clicked button
       } else {
@@ -270,8 +357,6 @@ window.onload = () => {
   });
 
   // Add search functionality
-  const searchInput = document.getElementById('search-input');
-  const searchButton = document.getElementById('search-button');
   searchInput.addEventListener('input', () => {
     const cityName = searchInput.value.trim();
     if (cityName) {
@@ -287,6 +372,27 @@ window.onload = () => {
       searchCity(cityName);
     } else {
       alert('Please enter a city name.');
+    }
+  });
+
+  // Add event listener for dropdown city selection
+  const dropdown = document.getElementById('city-dropdown');
+  dropdown.addEventListener('click', (event) => {
+    const listItem = event.target.closest('li');
+    if (listItem) {
+      const lat = parseFloat(listItem.dataset.lat);
+      const lon = parseFloat(listItem.dataset.lon);
+      const cityName = listItem.textContent.trim();
+
+      if (!isNaN(lat) && !isNaN(lon)) {
+        initMap(lat, lon); // Update map view
+        loadWeather(cityName, lat, lon, null); // Load weather data
+        loadHistory(cityName, lat, lon); // Load historical climate data
+        dropdown.style.display = 'none'; // Hide dropdown
+        searchInput.value = cityName; // Update input field
+      } else {
+        console.error('Invalid city coordinates.');
+      }
     }
   });
 };
