@@ -201,7 +201,7 @@ html {
 
   #today, #tomorrow {
     background-color: rgb(219, 234, 239);
-    height: 530px; /* Set consistent height */
+    height: 540px; /* Set consistent height */
     border-radius: 10px;
     overflow-y: auto; /* Add scroll if content exceeds height */
   }
