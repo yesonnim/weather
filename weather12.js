@@ -230,7 +230,7 @@ async function loadHistory(city, lat, lon) {
     const years = filtered.map(item => item.year);
     const temps = filtered.map(item => item.temp);
 
-    drawChart(years, temps, `How Temperature Changed Over the Last 80 Years`);
+    drawChart(years, temps, `${city} on ${mmdd}`);
     document.getElementById('info').innerHTML =
       `<b>Temperature on ${mmdd} in ${city} from ${years[0]} to ${years[years.length - 1]}</b>`;
   } catch (err) {
@@ -247,7 +247,7 @@ function drawChart(years, temps, city) {
     data: {
       labels: years,
       datasets: [{
-        label: `${city} on ${mmdd}`,
+        label: `How Temperature Changed Over the Last 80 Years`,
         data: temps,
         borderColor: 'rgb(3, 127, 59)',
         backgroundColor: 'rgba(3, 127, 59, 0.2)',
