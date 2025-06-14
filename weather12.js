@@ -303,6 +303,7 @@ function searchCity(cityName) {
           document.getElementById('search-input').value = cityName; // Update input field
           initMap(lat, lon); // Update map view
           loadWeather(cityName, lat, lon, null); // Load weather data for the selected city
+          loadHistory(cityName, lat, lon); //loads historical data
         });
 
         dropdown.appendChild(listItem);
